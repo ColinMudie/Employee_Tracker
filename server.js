@@ -2,8 +2,6 @@ const express = require('express');
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 // const cTable = require('console.table');
-const config = require('./config/local');
-const { query } = require('express');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -17,13 +15,13 @@ const connection = mysql.createConnection({
 
 
 connection.connect((err) => {
-    
+
     if (err) {
         console.error(`error connection: ${err.stack}`);
         return;
     }
     // console.log(`connected as id ${connection.threadId}`);
-   
+
     initInquirer();
     // addDepartments();
 });
@@ -44,6 +42,7 @@ const questions = [
             'View Employees',
             'Update Employee Roles',
             'Update Employee\'s Manager',
+            'View all Managers',
             'Exit'
         ]
     },
@@ -57,12 +56,12 @@ const questions = [
 
 const readAll = () => {
     connection.query(`SELECT first_name, last_name, title, salary, department.name FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id;`,
-    (err, res) => {
-        if (err) throw err;
-        console.log('\b');
-        console.table(res)
-        console.log('\b');
-    });
+        (err, res) => {
+            if (err) throw err;
+            console.log('\b');
+            console.table(res)
+            console.log('\b');
+        });
 }
 
 function initInquirer() {
@@ -70,9 +69,9 @@ function initInquirer() {
         // console.log(data);
         switch (data.path) {
             case 'Add Departments':
-                
+
                 createDepartments()
-                
+
                 break;
             case 'Add Roles':
                 createRoles();
@@ -96,10 +95,13 @@ function initInquirer() {
                 break;
             case 'Update Employee Roles':
                 updateRole();
-                
+
                 break;
             case 'Update Employee\'s Manager':
                 updateEmployeeManagers()
+
+            case 'View all Managers':
+                readManagers();
 
                 break;
             case 'Exit':
@@ -282,7 +284,7 @@ const readTable = (table) => {
             console.table(res);
             initInquirer();
         })
-//     console.log(query.sql);
+    //     console.log(query.sql);
 }
 
 const updateRole = () => {
@@ -323,8 +325,8 @@ const updateRole = () => {
                 let pickRole;
                 let pickEmployee;
                 for (let i = 0; i < roles.length; i++) {
-                    if(roles[i].title === data.newRole)
-                    pickRole = roles[i].id;
+                    if (roles[i].title === data.newRole)
+                        pickRole = roles[i].id;
                 }
                 for (let i = 0; i < employees.length; i++) {
                     if (employees[i].name === data.employee) {
@@ -354,50 +356,62 @@ const updateEmployeeManagers = () => {
     const employeeList = [];
     const managerList = [];
     connection.query(`SELECT * FROM employee_tracker_db.employee;`,
-    (err, res) => {
-        if (err) throw error;
-        for (let i = 0; i < res.length; i++) {
-            employeeList.push({ name: `${res[i].first_name} ${res[i].last_name}`, id: res[i].id });
-            if (res[i].role_id === 2){
-                managerList.push({ name: `${res[i].first_name} ${res[i].last_name}`, id: res[i].id })
+        (err, res) => {
+            if (err) throw error;
+            for (let i = 0; i < res.length; i++) {
+                employeeList.push({ name: `${res[i].first_name} ${res[i].last_name}`, id: res[i].id });
+                if (res[i].role_id === 2) {
+                    managerList.push({ name: `${res[i].first_name} ${res[i].last_name}`, id: res[i].id })
+                }
             }
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: 'employee',
+                    message: "Which employee should update their role?",
+                    choices: employeeList
+                },
+                {
+                    type: "list",
+                    name: 'newManager',
+                    message: (data) => `Who will be ${data.employee}'s new manager?`,
+                    choices: managerList
+                }
+            ]).then((data) => {
+                console.log(data);
+                let pickManager;
+                let pickEmployee;
+                for (let i = 0; i < employeeList.length; i++) {
+                    if (employeeList[i].name === data.employee) {
+                        pickEmployee = employeeList[i].id
+                    }
+                }
+                for (let i = 0; i < managerList.length; i++) {
+                    if (managerList[i].name === data.newManager) {
+                        pickManager = managerList[i].id
+                    }
+                }
+                console.log(pickEmployee);
+                console.log(pickManager);
+                connection.query(`UPDATE employee SET manager_id = ? WHERE id = ?`, [pickManager, pickEmployee],
+                    (err, res) => {
+                        if (err) throw err;
+                        initInquirer();
+                    }
+                )
+            })
         }
-        inquirer.prompt([
-            {
-                type: "list",
-                name: 'employee',
-                message: "Which employee should update their role?",
-                choices: employeeList
-            },
-            {
-                type: "list",
-                name: 'newManager',
-                message: (data) => `Who will be ${data.employee}'s new manager?`,
-                choices: managerList
-            }
-        ]).then((data) => {
-            console.log(data);
-            let pickManager;
-            let pickEmployee;
-            for (let i = 0; i < employeeList.length; i++) {
-                if (employeeList[i].name === data.employee) {
-                    pickEmployee = employeeList[i].id
-                }
-            }
-            for (let i = 0; i < managerList.length; i++) {
-                if (managerList[i].name === data.newManager) {
-                    pickManager = managerList[i].id
-                }
-            }
-            console.log(pickEmployee);
-            console.log(pickManager);
-            connection.query(`UPDATE employee SET manager_id = ? WHERE id = ?`, [pickManager, pickEmployee],
-            (err, res) => {
-                if (err) throw err;
-                initInquirer();
-            }
-            )
-        })
-    }
     )
+}
+
+const readManagers = () => {
+    console.clear()
+    const query = connection.query(`SELECT first_name, last_name FROM employee WHERE role_id = 2`,
+        (err, res) => {
+            if (err) throw err;
+            console.table(res);
+            initInquirer();
+        }
+    )
+    console.log(query.sql);
 }
