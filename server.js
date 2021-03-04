@@ -78,71 +78,99 @@ function initInquirer() {
         // console.log(data);
         switch (data.path) {
             case 'Add Departments':
+                console.clear()
+                readAll();
                 createDepartments()
                 break;
 
             case 'Add Roles':
+                console.clear()
+                readAll();
                 createRoles();
                 break;
 
             case 'Add Employees':
+                console.clear()
+                readAll();
                 createEmployee();
                 break;
 
             case 'View Departments':
+                console.clear()
+                readAll();
                 readTable('department');
                 break;
 
             case 'View Roles':
+                console.clear()
+                readAll();
                 readTable('role');
                 break;
 
             case 'View Employees':
+                console.clear()
+                readAll();
                 readTable('employee');
                 break;
 
             case 'Update Employee Roles':
+                console.clear()
+                readAll();
                 updateRole();
                 break;
 
             case 'Update Employee\'s Manager':
+                console.clear()
+                readAll();
                 updateEmployeeManagers()
                 break;
 
             case 'View all Managers':
+                console.clear()
+                readAll();
                 readManagers();
                 break;
 
             case 'Delete Employee':
+                console.clear()
+                readAll();
                 deleteItem('employee')
                 break;
 
             case 'Delete Role':
+                console.clear()
+                readAll();
                 deleteItem('role')
                 break;
 
             case 'Delete Department':
+                console.clear()
+                readAll();
                 deleteItem('department')
                 break;
 
             case 'View combined salaries':
+                console.clear()
+                readAll();
                 totalBudget();
                 break;
 
             case 'Exit':
-                connection.end();
+                // connection.end();
                 break;
             default:
                 break;
         }
-
+        if (data.exit === false){
+            initInquirer()
+        }
     })
 }
 
 //CREATE Department
 const createDepartments = () => {
-    console.clear()
-    readAll();
+    
+    // readAll();
     inquirer.prompt([
         {
             type: "input",
@@ -168,8 +196,6 @@ const createDepartments = () => {
 
 // CREATE Role
 const createRoles = () => {
-    console.clear()
-    readAll();
     // first READ departments for list
     const currentDepartments = [];
     connection.query(`SELECT * FROM department`, (err, res) => {
@@ -203,20 +229,20 @@ const createRoles = () => {
                 }
                 
             }
-            console.log(chosenDepartment);
-            // const query = connection.query(`INSERT INTO role SET ?`,
-            //     {
-            //         title: data.title,
-            //         salary: data.salary,
-            //         department_id: chosenDepartment
-            //     },
-            //     (err, res) => {
-            //         if (err) throw err;
-            //         // console.log(`${res.affectedRows} product inserted!\n`);
-            //         // console.log(`--------------------`);
-            //         initInquirer();
-            //     }
-            // )
+            // console.log(chosenDepartment);
+            const query = connection.query(`INSERT INTO role SET ?`,
+                {
+                    title: data.title,
+                    salary: data.salary,
+                    department_id: chosenDepartment
+                },
+                (err, res) => {
+                    if (err) throw err;
+                    // console.log(`${res.affectedRows} product inserted!\n`);
+                    // console.log(`--------------------`);
+                    initInquirer();
+                }
+            )
             // console.log(query.sql);
         })
     })
@@ -224,8 +250,6 @@ const createRoles = () => {
 
 //CREATE Employee
 const createEmployee = () => {
-    console.clear()
-    readAll();
     const roleList = [];
     const roles = [];
     const managersList = ["none"];
@@ -307,8 +331,6 @@ const createEmployee = () => {
 
 //Read any table
 const readTable = (table) => {
-    console.clear()
-    readAll();
     table = table.replace('"', ' ');
     const query = connection.query(`SELECT * FROM ${table}`,
         (err, res) => {
@@ -321,8 +343,6 @@ const readTable = (table) => {
 
 //Update Role
 const updateRole = () => {
-    console.clear()
-    readAll();
     const roles = [];
     const roleList = [];
     const employees = [];
@@ -384,8 +404,6 @@ const updateRole = () => {
 
 // Update the manager_id on an employee
 const updateEmployeeManagers = () => {
-    console.clear()
-    readAll();
     const employeeList = [];
     const managerList = [];
     connection.query(`SELECT * FROM employee_tracker_db.employee;`,
@@ -439,7 +457,6 @@ const updateEmployeeManagers = () => {
 
 //Read current managers
 const readManagers = () => {
-    console.clear()
     const query = connection.query(`SELECT first_name, last_name FROM employee WHERE role_id = 2`,
         (err, res) => {
             if (err) throw err;
@@ -452,7 +469,6 @@ const readManagers = () => {
 
 //Delete any id from any table
 const deleteItem = (table) => {
-    console.clear();
     const tableList = [];
     connection.query(`SELECT * FROM ${table}`, (err, res) => {
         if (err) throw err;
@@ -518,7 +534,6 @@ const totalBudget = () => {
             for (let i = 0; i < res.length; i++) {
                 departments.push({ name: res[i].name, id: res[i].id })
             }
-            
             inquirer.prompt([
                 {
                     type: "list",
