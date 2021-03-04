@@ -43,6 +43,9 @@ const questions = [
             'Update Employee Roles',
             'Update Employee\'s Manager',
             'View all Managers',
+            'Delete Employee',
+            'Delete Role',
+            'Delete Department',
             'Exit'
         ]
     },
@@ -69,41 +72,53 @@ function initInquirer() {
         // console.log(data);
         switch (data.path) {
             case 'Add Departments':
-
                 createDepartments()
-
                 break;
+
             case 'Add Roles':
                 createRoles();
-
                 break;
+
             case 'Add Employees':
                 createEmployee();
-
                 break;
+
             case 'View Departments':
                 readTable('department');
-
                 break;
+
             case 'View Roles':
                 readTable('role');
-
                 break;
+
             case 'View Employees':
                 readTable('employee');
-
                 break;
+
             case 'Update Employee Roles':
                 updateRole();
-
                 break;
+
             case 'Update Employee\'s Manager':
                 updateEmployeeManagers()
+                break;
 
             case 'View all Managers':
                 readManagers();
-
                 break;
+
+            case 'Delete Employee':
+                deleteItem('employee')
+                break;
+
+            case 'Delete Role':
+                deleteItem('role')
+                break;
+
+            case 'Delete Department':
+                deleteItem('department')
+                break;
+
             case 'Exit':
                 connection.end();
                 break;
@@ -414,4 +429,60 @@ const readManagers = () => {
         }
     )
     console.log(query.sql);
+}
+
+const deleteItem = (table) => {
+    console.clear();
+    const tableList = [];
+    connection.query(`SELECT * FROM ${table}`, (err, res) => {
+        if (err) throw err;
+        switch (table) {
+            case "employee":
+                for (let i = 0; i < res.length; i++) {
+                    tableList.push({ name: `${res[i].first_name} ${res[i].last_name}`, id: res[i].id, });
+                }
+                break;
+
+            case "role":
+                for (let i = 0; i < res.length; i++) {
+                    tableList.push({ name: res[i].title, id: res[i].id, });
+                }
+                break;
+
+            case "department":
+                for (let i = 0; i < res.length; i++) {
+                    tableList.push({ name: res[i].name, id: res[i].id, });
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        console.log(tableList);
+        inquirer.prompt([
+            {
+                type: "list",
+                name: 'deleteName',
+                message: `Which ${table} would you like to delete?`,
+                choices: tableList
+            }
+        ]).then((data) => {
+            console.log(data);
+            let deleteId;
+            for (let i = 0; i < tableList.length; i++) {
+                if (data.deleteName === tableList[i].name){
+                    deleteId = tableList[i].id
+                }
+            }
+            console.log(deleteId);
+            const query = connection.query(`DELETE FROM ?? WHERE id = ?`,
+            [table, deleteId],
+            (err, res) => {
+                if (err) throw err;
+                initInquirer();
+            });
+            console.log(query.sql);
+        });       
+    });
 }
