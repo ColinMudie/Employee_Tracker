@@ -3,7 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## Description
-This app is a Content Management System designed to interact with a database on MYSQL using CRUD methods. In the future, I would like to add more safety to the delete functions, such as not being able to delete Managers or a confirmation for each choice. 
+This app is a Content Management System designed to interact with a database on MYSQL using CRUD methods. In the future, I would like to add more safety to the delete functions, such as not being able to delete the role "Managers" or a confirmation for each choice. 
 
 ## Table of Contents
 
