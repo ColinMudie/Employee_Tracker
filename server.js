@@ -14,7 +14,6 @@ const connection = mysql.createConnection({
     database: 'employee_tracker_db'
 });
 
-
 connection.connect((err) => {
     if (err) {
         console.error(`error connection: ${err.stack}`);
@@ -33,8 +32,6 @@ connection.connect((err) => {
 
     // addDepartments();
 });
-
-
 
 const questions = [
     {
@@ -142,7 +139,6 @@ function initInquirer() {
     })
 }
 
-
 //CREATE Department
 const createDepartments = () => {
     console.clear()
@@ -176,10 +172,10 @@ const createRoles = () => {
     readAll();
     // first READ departments for list
     const currentDepartments = [];
-    connection.query(`SELECT name FROM department`, (err, res) => {
+    connection.query(`SELECT * FROM department`, (err, res) => {
         if (err) throw err;
         for (let i = 0; i < res.length; i++) {
-            currentDepartments.push(res[i])
+            currentDepartments.push({name: res[i].name, id: res[i].id})
         }
         //Create Role Prompt
         inquirer.prompt([
@@ -200,20 +196,27 @@ const createRoles = () => {
                 choices: currentDepartments
             }
         ]).then((data) => {
-            let chosenDepartment = 2 + (currentDepartments.indexOf(data.departmentId))
-            const query = connection.query(`INSERT INTO role SET ?`,
-                {
-                    title: data.title,
-                    salary: data.salary,
-                    department_id: chosenDepartment
-                },
-                (err, res) => {
-                    if (err) throw err;
-                    // console.log(`${res.affectedRows} product inserted!\n`);
-                    // console.log(`--------------------`);
-                    initInquirer();
+            let chosenDepartment;
+            for (let i = 0; i < currentDepartments.length; i++) {
+                if (currentDepartments[i].name === data.departmentId){
+                    chosenDepartment = currentDepartments[i].id
                 }
-            )
+                
+            }
+            console.log(chosenDepartment);
+            // const query = connection.query(`INSERT INTO role SET ?`,
+            //     {
+            //         title: data.title,
+            //         salary: data.salary,
+            //         department_id: chosenDepartment
+            //     },
+            //     (err, res) => {
+            //         if (err) throw err;
+            //         // console.log(`${res.affectedRows} product inserted!\n`);
+            //         // console.log(`--------------------`);
+            //         initInquirer();
+            //     }
+            // )
             // console.log(query.sql);
         })
     })
@@ -302,6 +305,7 @@ const createEmployee = () => {
     });
 }
 
+//Read any table
 const readTable = (table) => {
     console.clear()
     readAll();
@@ -315,6 +319,7 @@ const readTable = (table) => {
     //     console.log(query.sql);
 }
 
+//Update Role
 const updateRole = () => {
     console.clear()
     readAll();
@@ -377,7 +382,7 @@ const updateRole = () => {
     });
 }
 
-
+// Update the manager_id on an employee
 const updateEmployeeManagers = () => {
     console.clear()
     readAll();
@@ -432,6 +437,7 @@ const updateEmployeeManagers = () => {
     )
 }
 
+//Read current managers
 const readManagers = () => {
     console.clear()
     const query = connection.query(`SELECT first_name, last_name FROM employee WHERE role_id = 2`,
@@ -444,6 +450,7 @@ const readManagers = () => {
     // console.log(query.sql);
 }
 
+//Delete any id from any table
 const deleteItem = (table) => {
     console.clear();
     const tableList = [];
@@ -500,6 +507,7 @@ const deleteItem = (table) => {
     });
 }
 
+//view total budget of selected department
 const totalBudget = () => {
     const departments = [];
     const salaries = [];
