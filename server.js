@@ -1,7 +1,8 @@
 const express = require('express');
 const mysql = require('mysql');
 const inquirer = require('inquirer');
-// const cTable = require('console.table');
+const figlet = require('figlet');
+const cTable = require('console.table');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -15,14 +16,21 @@ const connection = mysql.createConnection({
 
 
 connection.connect((err) => {
-
     if (err) {
         console.error(`error connection: ${err.stack}`);
         return;
     }
     // console.log(`connected as id ${connection.threadId}`);
+    figlet('Employee Tracker', function (err, data) {
+        if (err) {
+            console.log('Something went wrong...');
+            console.dir(err);
+            return;
+        }
+        console.log(data)
+        initInquirer();
+    });
 
-    initInquirer();
     // addDepartments();
 });
 
@@ -46,6 +54,7 @@ const questions = [
             'Delete Employee',
             'Delete Role',
             'Delete Department',
+            'View combined salaries',
             'Exit'
         ]
     },
@@ -117,6 +126,10 @@ function initInquirer() {
 
             case 'Delete Department':
                 deleteItem('department')
+                break;
+
+            case 'View combined salaries':
+                totalBudget();
                 break;
 
             case 'Exit':
@@ -283,7 +296,7 @@ const createEmployee = () => {
                             initInquirer();
                         }
                     )
-                    console.log(query.sql);
+                    // console.log(query.sql);
                 })
         })
     });
@@ -393,7 +406,7 @@ const updateEmployeeManagers = () => {
                     choices: managerList
                 }
             ]).then((data) => {
-                console.log(data);
+                // console.log(data);
                 let pickManager;
                 let pickEmployee;
                 for (let i = 0; i < employeeList.length; i++) {
@@ -406,8 +419,8 @@ const updateEmployeeManagers = () => {
                         pickManager = managerList[i].id
                     }
                 }
-                console.log(pickEmployee);
-                console.log(pickManager);
+                // console.log(pickEmployee);
+                // console.log(pickManager);
                 connection.query(`UPDATE employee SET manager_id = ? WHERE id = ?`, [pickManager, pickEmployee],
                     (err, res) => {
                         if (err) throw err;
@@ -428,7 +441,7 @@ const readManagers = () => {
             initInquirer();
         }
     )
-    console.log(query.sql);
+    // console.log(query.sql);
 }
 
 const deleteItem = (table) => {
@@ -459,7 +472,7 @@ const deleteItem = (table) => {
                 break;
         }
 
-        console.log(tableList);
+        // console.log(tableList);
         inquirer.prompt([
             {
                 type: "list",
@@ -468,21 +481,67 @@ const deleteItem = (table) => {
                 choices: tableList
             }
         ]).then((data) => {
-            console.log(data);
+            // console.log(data);
             let deleteId;
             for (let i = 0; i < tableList.length; i++) {
-                if (data.deleteName === tableList[i].name){
+                if (data.deleteName === tableList[i].name) {
                     deleteId = tableList[i].id
                 }
             }
-            console.log(deleteId);
+            // console.log(deleteId);
             const query = connection.query(`DELETE FROM ?? WHERE id = ?`,
-            [table, deleteId],
-            (err, res) => {
-                if (err) throw err;
-                initInquirer();
-            });
-            console.log(query.sql);
-        });       
+                [table, deleteId],
+                (err, res) => {
+                    if (err) throw err;
+                    initInquirer();
+                });
+            // console.log(query.sql);
+        });
     });
 }
+
+const totalBudget = () => {
+    const departments = [];
+    const salaries = [];
+    let chosenId;
+    connection.query(`SELECT * FROM department`,
+        (err, res) => {
+            if (err) throw err;
+            for (let i = 0; i < res.length; i++) {
+                departments.push({ name: res[i].name, id: res[i].id })
+            }
+            
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: 'departmentName',
+                    message: `Which department would you like to see the budget for?`,
+                    choices: departments
+                }
+            ])
+                .then((data) => {
+                    for (let i = 0; i < departments.length; i++) {
+                        if (departments[i].name === data.departmentName) {
+                            chosenId = departments[i].id
+                        }
+                    }
+                    connection.query(`SELECT salary FROM employee_tracker_db.role 
+                        LEFT JOIN employee_tracker_db.employee 
+                        ON role.id = employee.role_id WHERE ?`,
+                        {
+                            department_id: chosenId,
+                        },
+                        (err, res) => {
+                            if (err) throw err;
+                            for (let i = 0; i < res.length; i++) {
+                                salaries.push(res[i].salary);
+                            }
+                            console.log(salaries.reduce((a, b) => a + b, 0));
+                            initInquirer();
+                        }
+                    )
+                })
+        });
+}
+
+
